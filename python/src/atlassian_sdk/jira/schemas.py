@@ -49,6 +49,14 @@ class CreateIssueRequest(BaseModel):
         return {"fields": fields}
 
 
+_DEFAULT_SEARCH_FIELDS = [
+    "summary", "status", "issuetype", "priority",
+    "assignee", "creator", "reporter", "project",
+    "labels", "created", "updated", "parent",
+    "duedate", "resolution", "description",
+]
+
+
 class SearchIssuesRequest(BaseModel):
     """Input schema for searching Jira issues via JQL."""
 
@@ -64,10 +72,11 @@ class SearchIssuesRequest(BaseModel):
         Returns:
             A dict suitable for ``POST /rest/api/3/search/jql``.
         """
-        body: dict = {"jql": self.jql, "maxResults": self.limit}
-        if self.fields is not None:
-            body["fields"] = self.fields
-        return body
+        return {
+            "jql": self.jql,
+            "maxResults": self.limit,
+            "fields": self.fields if self.fields is not None else _DEFAULT_SEARCH_FIELDS,
+        }
 
 
 class TransitionIssueRequest(BaseModel):

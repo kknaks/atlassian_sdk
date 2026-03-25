@@ -169,7 +169,7 @@ describe("JiraClient", () => {
 
       expect(mockPost(http)).toHaveBeenCalledWith(
         "/rest/api/3/search/jql",
-        { jql: "project = TEST", maxResults: 50 },
+        expect.objectContaining({ jql: "project = TEST", maxResults: 50 }),
       );
       expect(result).toEqual([]);
     });

@@ -54,16 +54,23 @@ export const searchIssuesSchema = z
 
 export type SearchIssuesInput = z.infer<typeof searchIssuesSchema>;
 
+/** Default fields requested in search results. */
+const DEFAULT_SEARCH_FIELDS = [
+  "summary", "status", "issuetype", "priority",
+  "assignee", "creator", "reporter", "project",
+  "labels", "created", "updated", "parent",
+  "duedate", "resolution", "description",
+];
+
 /** Build the REST API request body for searching issues. */
 export function searchIssuesBody(
   input: SearchIssuesInput,
 ): Record<string, unknown> {
-  const body: Record<string, unknown> = {
+  return {
     jql: input.jql,
     maxResults: input.maxResults,
+    fields: input.fields?.length ? input.fields : DEFAULT_SEARCH_FIELDS,
   };
-  if (input.fields?.length) body.fields = input.fields;
-  return body;
 }
 
 export const transitionIssueSchema = z

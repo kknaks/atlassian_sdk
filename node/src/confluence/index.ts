@@ -14,6 +14,8 @@ export type {
   ConfluenceSearchResult,
 } from "./types.js";
 
+export { stripSpace, stripPage, stripComment } from "./types.js";
+
 export {
   createPageSchema,
   createPageBody,

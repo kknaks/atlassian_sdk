@@ -6,11 +6,11 @@ import type {
   ConfluencePage,
   ConfluenceSpace,
   ConfluenceComment,
-  ConfluencePageList,
   ConfluenceSpaceList,
   ConfluenceCommentList,
   ConfluenceSearchResult,
 } from "./types.js";
+import { stripSpace, stripPage, stripComment } from "./types.js";
 import {
   createPageSchema,
   createPageBody,
@@ -35,17 +35,19 @@ export class ConfluenceClient {
   /** Create a new Confluence page. */
   async createPage(input: CreatePageInput): Promise<ConfluencePage> {
     const parsed = createPageSchema.parse(input);
-    return this.#http.post<ConfluencePage>(
+    const raw = await this.#http.post<Record<string, unknown>>(
       "/wiki/api/v2/pages",
       createPageBody(parsed),
     );
+    return stripPage(raw);
   }
 
   /** Get a single page by ID with storage body format. */
   async getPage(pageId: string): Promise<ConfluencePage> {
-    return this.#http.get<ConfluencePage>(`/wiki/api/v2/pages/${pageId}`, {
+    const raw = await this.#http.get<Record<string, unknown>>(`/wiki/api/v2/pages/${pageId}`, {
       "body-format": "storage",
     });
+    return stripPage(raw);
   }
 
   /** Update an existing page. */
@@ -54,52 +56,53 @@ export class ConfluenceClient {
     input: UpdatePageInput,
   ): Promise<ConfluencePage> {
     const parsed = updatePageSchema.parse(input);
-    return this.#http.put<ConfluencePage>(
+    const raw = await this.#http.put<Record<string, unknown>>(
       `/wiki/api/v2/pages/${pageId}`,
       updatePageBody(pageId, parsed),
     );
+    return stripPage(raw);
   }
 
-  /** List all spaces (returns array). */
+  /** List all spaces (returns stripped array). */
   async listSpaces(limit = 25): Promise<ConfluenceSpace[]> {
     const result = await this.#http.get<ConfluenceSpaceList>("/wiki/api/v2/spaces", {
       limit: String(limit),
     });
-    return result.results;
+    return result.results.map((s) => stripSpace(s as unknown as Record<string, unknown>));
   }
 
-  /** List pages in a space (returns array). */
+  /** List pages in a space (returns stripped array). */
   async listPagesInSpace(
     spaceId: string,
     limit = 25,
   ): Promise<ConfluencePage[]> {
-    const result = await this.#http.get<ConfluencePageList>(
+    const result = await this.#http.get<{ results: Record<string, unknown>[] }>(
       `/wiki/api/v2/spaces/${spaceId}/pages`,
       { limit: String(limit) },
     );
-    return result.results;
+    return result.results.map(stripPage);
   }
 
-  /** List child pages of a page (returns array). */
+  /** List child pages of a page (returns stripped array). */
   async listChildPages(
     pageId: string,
     limit = 25,
   ): Promise<ConfluencePage[]> {
-    const result = await this.#http.get<ConfluencePageList>(
+    const result = await this.#http.get<{ results: Record<string, unknown>[] }>(
       `/wiki/api/v2/pages/${pageId}/children`,
       { limit: String(limit) },
     );
-    return result.results;
+    return result.results.map(stripPage);
   }
 
-  /** List footer comments on a page (returns array). */
+  /** List footer comments on a page (returns stripped array). */
   async listFooterComments(
     pageId: string,
   ): Promise<ConfluenceComment[]> {
     const result = await this.#http.get<ConfluenceCommentList>(
       `/wiki/api/v2/pages/${pageId}/footer-comments`,
     );
-    return result.results;
+    return result.results.map((c) => stripComment(c as unknown as Record<string, unknown>));
   }
 
   /** Create a footer comment on a page. */
@@ -108,20 +111,21 @@ export class ConfluenceClient {
     body: string,
   ): Promise<ConfluenceComment> {
     const parsed = createCommentSchema.parse({ body });
-    return this.#http.post<ConfluenceComment>(
+    const raw = await this.#http.post<Record<string, unknown>>(
       `/wiki/api/v2/pages/${pageId}/footer-comments`,
       createCommentBody(parsed),
     );
+    return stripComment(raw);
   }
 
-  /** List inline comments on a page (returns array). */
+  /** List inline comments on a page (returns stripped array). */
   async listInlineComments(
     pageId: string,
   ): Promise<ConfluenceComment[]> {
     const result = await this.#http.get<ConfluenceCommentList>(
       `/wiki/api/v2/pages/${pageId}/inline-comments`,
     );
-    return result.results;
+    return result.results.map((c) => stripComment(c as unknown as Record<string, unknown>));
   }
 
   /** Create an inline comment on a page. */
@@ -130,10 +134,11 @@ export class ConfluenceClient {
     body: string,
   ): Promise<ConfluenceComment> {
     const parsed = createCommentSchema.parse({ body });
-    return this.#http.post<ConfluenceComment>(
+    const raw = await this.#http.post<Record<string, unknown>>(
       `/wiki/api/v2/pages/${pageId}/inline-comments`,
       createCommentBody(parsed),
     );
+    return stripComment(raw);
   }
 
   /** Search Confluence content using CQL (v1 REST API). */

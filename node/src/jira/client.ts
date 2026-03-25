@@ -15,7 +15,7 @@ import type {
   RawJiraSearchResult,
   JiraCommentPage,
 } from "./types.js";
-import { flattenIssue } from "./types.js";
+import { flattenIssue, stripProject, stripIssueType, stripComment } from "./types.js";
 import {
   createIssueSchema,
   createIssueBody,
@@ -103,18 +103,20 @@ export class JiraClient {
     return { ...this.#epicMap };
   }
 
-  /** List all visible projects. */
+  /** List all visible projects (stripped to declared fields). */
   async listProjects(): Promise<JiraProject[]> {
-    return this.#http.get<JiraProject[]>("/rest/api/3/project");
+    const raw = await this.#http.get<Record<string, unknown>[]>("/rest/api/3/project");
+    return raw.map(stripProject);
   }
 
-  /** List issue types for a project. */
+  /** List issue types for a project (stripped to declared fields). */
   async listIssueTypes(projectKeyOrId: string): Promise<JiraIssueType[]> {
     const data = await this.#http.get<{
-      issueTypes?: JiraIssueType[];
-      values?: JiraIssueType[];
+      issueTypes?: Record<string, unknown>[];
+      values?: Record<string, unknown>[];
     }>(`/rest/api/3/issue/createmeta/${projectKeyOrId}/issuetypes`);
-    return data.issueTypes ?? data.values ?? [];
+    const items = data.issueTypes ?? data.values ?? [];
+    return items.map(stripIssueType);
   }
 
   /**
@@ -200,17 +202,18 @@ export class JiraClient {
 
   /** Add a comment to an issue. */
   async addComment(issueKey: string, body: string): Promise<JiraComment> {
-    return this.#http.post<JiraComment>(
+    const raw = await this.#http.post<Record<string, unknown>>(
       `/rest/api/3/issue/${issueKey}/comment`,
       { body: textToAdf(body) },
     );
+    return stripComment(raw);
   }
 
   /** List comments on an issue (returns array). */
   async listComments(issueKey: string): Promise<JiraComment[]> {
-    const page = await this.#http.get<JiraCommentPage>(
+    const page = await this.#http.get<{ comments: Record<string, unknown>[] }>(
       `/rest/api/3/issue/${issueKey}/comment`,
     );
-    return page.comments;
+    return page.comments.map(stripComment);
   }
 }

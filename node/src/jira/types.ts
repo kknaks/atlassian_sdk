@@ -120,6 +120,36 @@ export function issueUrl(selfUrl: string, key: string): string {
   }
 }
 
+/** Strip unknown fields from a project response. */
+export function stripProject(raw: Record<string, unknown>): JiraProject {
+  return {
+    id: raw.id as string,
+    key: raw.key as string,
+    name: raw.name as string,
+    ...(raw.projectTypeKey != null ? { projectTypeKey: raw.projectTypeKey as string } : {}),
+  };
+}
+
+/** Strip unknown fields from an issue type response. */
+export function stripIssueType(raw: Record<string, unknown>): JiraIssueType {
+  return {
+    id: raw.id as string,
+    name: raw.name as string,
+    subtask: raw.subtask as boolean,
+  };
+}
+
+/** Strip unknown fields from a comment response. */
+export function stripComment(raw: Record<string, unknown>): JiraComment {
+  return {
+    id: raw.id as string,
+    body: raw.body,
+    ...(raw.author != null ? { author: raw.author as JiraUser } : {}),
+    ...(raw.created != null ? { created: raw.created as string } : {}),
+    ...(raw.updated != null ? { updated: raw.updated as string } : {}),
+  };
+}
+
 export interface JiraTransition {
   id: string;
   name: string;

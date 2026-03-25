@@ -138,9 +138,14 @@ describe("searchIssuesSchema", () => {
 });
 
 describe("searchIssuesBody", () => {
-  it("builds body without fields", () => {
+  it("builds body with default fields when none provided", () => {
     const body = searchIssuesBody({ jql: "project = X", maxResults: 50 });
-    expect(body).toEqual({ jql: "project = X", maxResults: 50 });
+    expect(body.jql).toBe("project = X");
+    expect(body.maxResults).toBe(50);
+    expect(body.fields).toBeInstanceOf(Array);
+    expect((body.fields as string[]).length).toBeGreaterThan(0);
+    expect(body.fields).toContain("summary");
+    expect(body.fields).toContain("status");
   });
 
   it("includes fields when provided", () => {

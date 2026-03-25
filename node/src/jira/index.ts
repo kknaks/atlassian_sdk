@@ -19,7 +19,7 @@ export type {
   JiraCommentPage,
 } from "./types.js";
 
-export { flattenIssue, issueUrl } from "./types.js";
+export { flattenIssue, issueUrl, stripProject, stripIssueType, stripComment } from "./types.js";
 
 export {
   textToAdf,

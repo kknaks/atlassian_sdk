@@ -95,17 +95,22 @@ class TestSearchIssuesRequest:
     def test_minimal_body(self) -> None:
         req = SearchIssuesRequest(jql="project = PROJ")
         body = req.to_request_body()
-        assert body == {"jql": "project = PROJ", "maxResults": 50}
+        assert body["jql"] == "project = PROJ"
+        assert body["maxResults"] == 50
+        assert isinstance(body["fields"], list)
+        assert "summary" in body["fields"]
+        assert "status" in body["fields"]
 
     def test_with_fields(self) -> None:
         req = SearchIssuesRequest(jql="status = Done", limit=10, fields=["summary", "status"])
         body = req.to_request_body()
         assert body == {"jql": "status = Done", "maxResults": 10, "fields": ["summary", "status"]}
 
-    def test_no_fields_when_none(self) -> None:
+    def test_default_fields_when_none(self) -> None:
         req = SearchIssuesRequest(jql="x")
         body = req.to_request_body()
-        assert "fields" not in body
+        assert "fields" in body
+        assert len(body["fields"]) > 0
 
     def test_extra_forbidden(self) -> None:
         with pytest.raises(PydanticValidationError):
