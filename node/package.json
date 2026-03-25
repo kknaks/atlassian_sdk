@@ -8,13 +8,12 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
-      "require": "./dist/index.cjs",
-      "types": "./dist/index.d.ts"
+      "require": "./dist/index.cjs"
     },
     "./mcp": {
       "import": "./dist/mcp/index.js",
-      "require": "./dist/mcp/index.cjs",
       "types": "./dist/mcp/index.d.ts"
     }
   },
