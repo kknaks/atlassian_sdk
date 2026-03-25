@@ -1,0 +1,44 @@
+{
+  "name": "@atlassian-sdk/js",
+  "version": "0.1.0",
+  "description": "TypeScript SDK for Atlassian REST API (Jira + Confluence) — React/RN compatible",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs",
+      "types": "./dist/index.d.ts"
+    },
+    "./mcp": {
+      "import": "./dist/mcp/index.js",
+      "require": "./dist/mcp/index.cjs",
+      "types": "./dist/mcp/index.d.ts"
+    }
+  },
+  "bin": {
+    "atlassian-sdk-mcp": "./dist/mcp/index.js"
+  },
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "zod": "^3.23",
+    "@modelcontextprotocol/sdk": "^1.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.5",
+    "tsup": "^8.0",
+    "vitest": "^2.0",
+    "tsx": "^4.0"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "author": "kknaks",
+  "license": "MIT"
+}
