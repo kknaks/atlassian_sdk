@@ -118,6 +118,8 @@ CONFLUENCE_TOOLS = {
     "get_child_pages",
     "get_footer_comments",
     "add_footer_comment",
+    "get_inline_comments",
+    "add_inline_comment",
     "search_confluence",
 }
 
@@ -346,6 +348,29 @@ async def list_tools() -> list[Tool]:
             },
         ),
         Tool(
+            name="get_inline_comments",
+            description="List inline comments on a Confluence page",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "page_id": {"type": "string", "description": "Page ID"},
+                },
+                "required": ["page_id"],
+            },
+        ),
+        Tool(
+            name="add_inline_comment",
+            description="Add an inline comment to a Confluence page",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "page_id": {"type": "string", "description": "Page ID"},
+                    "body": {"type": "string", "description": "Comment body in storage format"},
+                },
+                "required": ["page_id", "body"],
+            },
+        ),
+        Tool(
             name="search_confluence",
             description="Search Confluence using CQL",
             inputSchema={
@@ -540,6 +565,19 @@ async def _handle_confluence_tool(name: str, arguments: dict[str, Any]) -> list[
 
     if name == "add_footer_comment":
         comment = await client.add_footer_comment(
+            arguments["page_id"],
+            body=arguments["body"],
+        )
+        data = comment.model_dump()
+        return [TextContent(type="text", text=json.dumps(data, ensure_ascii=False, indent=2))]
+
+    if name == "get_inline_comments":
+        comments = await client.get_inline_comments(arguments["page_id"])
+        data = [c.model_dump() for c in comments]
+        return [TextContent(type="text", text=json.dumps(data, ensure_ascii=False, indent=2))]
+
+    if name == "add_inline_comment":
+        comment = await client.add_inline_comment(
             arguments["page_id"],
             body=arguments["body"],
         )
