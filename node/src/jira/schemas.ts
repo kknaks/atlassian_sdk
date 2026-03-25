@@ -15,13 +15,14 @@ export function textToAdf(text: string): Record<string, unknown> {
 
 export const createIssueSchema = z
   .object({
-    projectKey: z.string(),
+    projectKey: z.string().optional(),
     summary: z.string(),
     issueTypeName: z.string().default("Task"),
     description: z.string().optional(),
     assigneeId: z.string().optional(),
     labels: z.array(z.string()).optional(),
     parentKey: z.string().optional(),
+    epic: z.string().optional(),
   })
   .strict();
 
@@ -29,17 +30,17 @@ export type CreateIssueInput = z.infer<typeof createIssueSchema>;
 
 /** Build the REST API request body for creating an issue. */
 export function createIssueBody(
-  input: CreateIssueInput,
+  input: CreateIssueInput & { resolvedProjectKey: string; resolvedParentKey?: string },
 ): Record<string, unknown> {
   const fields: Record<string, unknown> = {
-    project: { key: input.projectKey },
+    project: { key: input.resolvedProjectKey },
     summary: input.summary,
     issuetype: { name: input.issueTypeName },
   };
   if (input.description) fields.description = textToAdf(input.description);
   if (input.assigneeId) fields.assignee = { id: input.assigneeId };
   if (input.labels?.length) fields.labels = input.labels;
-  if (input.parentKey) fields.parent = { key: input.parentKey };
+  if (input.resolvedParentKey) fields.parent = { key: input.resolvedParentKey };
   return { fields };
 }
 

@@ -73,9 +73,9 @@ describe("createIssueSchema", () => {
 describe("createIssueBody", () => {
   it("builds minimal body", () => {
     const body = createIssueBody({
-      projectKey: "TEST",
       summary: "Task",
       issueTypeName: "Task",
+      resolvedProjectKey: "TEST",
     });
     expect(body).toEqual({
       fields: {
@@ -88,10 +88,10 @@ describe("createIssueBody", () => {
 
   it("includes ADF description when provided", () => {
     const body = createIssueBody({
-      projectKey: "TEST",
       summary: "Task",
       issueTypeName: "Task",
       description: "My desc",
+      resolvedProjectKey: "TEST",
     });
     const fields = body.fields as Record<string, unknown>;
     expect(fields.description).toEqual(textToAdf("My desc"));
@@ -99,12 +99,12 @@ describe("createIssueBody", () => {
 
   it("includes assignee, labels, and parent when provided", () => {
     const body = createIssueBody({
-      projectKey: "TEST",
       summary: "Sub",
       issueTypeName: "Sub-task",
       assigneeId: "user1",
       labels: ["a", "b"],
-      parentKey: "TEST-1",
+      resolvedProjectKey: "TEST",
+      resolvedParentKey: "TEST-1",
     });
     const fields = body.fields as Record<string, unknown>;
     expect(fields.assignee).toEqual({ id: "user1" });

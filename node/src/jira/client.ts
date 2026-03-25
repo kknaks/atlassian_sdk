@@ -24,15 +24,81 @@ import {
 } from "./schemas.js";
 import type { CreateIssueInput, SearchIssuesInput } from "./schemas.js";
 
+/** Options for JiraClient constructor. */
+export interface JiraClientOptions {
+  /** HttpClient or AuthConfig for authentication. */
+  auth?: HttpClient | AuthConfig;
+  /** Default project key. Falls back to PYACLI_DEFAULT_PROJECT env var. */
+  project?: string;
+  /** Epic name → issue key mapping. Falls back to PYACLI_EPIC_MAP env var. */
+  epicMap?: Record<string, string>;
+}
+
+/**
+ * Load epic mapping from PYACLI_EPIC_MAP environment variable.
+ * Format: "frontend:WNVO-9,backend:WNVO-23,ai:WNVO-24"
+ */
+function loadEpicMap(): Record<string, string> {
+  let raw = "";
+  try {
+    raw = process.env["PYACLI_EPIC_MAP"] ?? "";
+  } catch {
+    return {};
+  }
+  if (!raw) return {};
+  const result: Record<string, string> = {};
+  for (const pair of raw.split(",")) {
+    const trimmed = pair.trim();
+    const idx = trimmed.indexOf(":");
+    if (idx > 0) {
+      result[trimmed.slice(0, idx).trim()] = trimmed.slice(idx + 1).trim();
+    }
+  }
+  return result;
+}
+
+function resolveDefaultProject(): string {
+  try {
+    return process.env["PYACLI_DEFAULT_PROJECT"] ?? "";
+  } catch {
+    return "";
+  }
+}
+
 export class JiraClient {
   readonly #http: HttpClient;
+  readonly #project: string;
+  readonly #epicMap: Record<string, string>;
 
-  constructor(httpOrAuth?: HttpClient | AuthConfig) {
-    if (httpOrAuth instanceof HttpClient) {
-      this.#http = httpOrAuth;
+  constructor(optsOrAuth?: JiraClientOptions | HttpClient | AuthConfig) {
+    if (optsOrAuth instanceof HttpClient) {
+      this.#http = optsOrAuth;
+      this.#project = resolveDefaultProject();
+      this.#epicMap = loadEpicMap();
+    } else if (optsOrAuth && "auth" in optsOrAuth) {
+      const opts = optsOrAuth as JiraClientOptions;
+      if (opts.auth instanceof HttpClient) {
+        this.#http = opts.auth;
+      } else {
+        this.#http = new HttpClient(opts.auth);
+      }
+      this.#project = opts.project ?? resolveDefaultProject();
+      this.#epicMap = opts.epicMap ?? loadEpicMap();
     } else {
-      this.#http = new HttpClient(httpOrAuth);
+      this.#http = new HttpClient(optsOrAuth as AuthConfig | undefined);
+      this.#project = resolveDefaultProject();
+      this.#epicMap = loadEpicMap();
     }
+  }
+
+  /** Current default project key. */
+  get project(): string {
+    return this.#project;
+  }
+
+  /** Current epic name → issue key mapping. */
+  get epics(): Record<string, string> {
+    return { ...this.#epicMap };
   }
 
   /** List all visible projects. */
@@ -49,10 +115,41 @@ export class JiraClient {
     return data.issueTypes ?? data.values ?? [];
   }
 
-  /** Create a new issue and return the full issue object. */
+  /**
+   * Create a new issue and return the full issue object.
+   *
+   * - If `projectKey` is omitted, falls back to the default project.
+   * - If `epic` is provided, resolves it to a parent key via epicMap.
+   * - `parentKey` takes precedence over `epic`.
+   */
   async createIssue(input: CreateIssueInput): Promise<JiraIssue> {
     const parsed = createIssueSchema.parse(input);
-    const body = createIssueBody(parsed);
+
+    // Resolve project
+    const resolvedProjectKey = parsed.projectKey || this.#project;
+    if (!resolvedProjectKey) {
+      throw new ValidationError(
+        "No project specified and no default project set",
+      );
+    }
+
+    // Resolve epic → parentKey
+    let resolvedParentKey = parsed.parentKey;
+    if (!resolvedParentKey && parsed.epic) {
+      resolvedParentKey = this.#epicMap[parsed.epic];
+      if (!resolvedParentKey) {
+        const available = Object.keys(this.#epicMap);
+        throw new ValidationError(
+          `Epic "${parsed.epic}" not found. Available: ${available.join(", ")}`,
+        );
+      }
+    }
+
+    const body = createIssueBody({
+      ...parsed,
+      resolvedProjectKey,
+      resolvedParentKey,
+    });
     const result = await this.#http.post<{
       id: string;
       key: string;
