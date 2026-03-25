@@ -262,6 +262,7 @@ export async function dispatchTool(
         title: args.title as string,
         body: args.body as string,
         parentId: args.parentId as string | undefined,
+        status: "current",
       });
 
     case "confluence_get_page":
@@ -272,6 +273,7 @@ export async function dispatchTool(
         title: args.title as string,
         body: args.body as string,
         versionNumber: args.versionNumber as number,
+        status: "current",
       });
 
     case "confluence_list_spaces":

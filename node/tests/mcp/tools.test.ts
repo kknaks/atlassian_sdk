@@ -151,6 +151,7 @@ describe("dispatchTool — Confluence tools", () => {
       title: "My Page",
       body: "<p>Hi</p>",
       parentId: "100",
+      status: "current",
     });
   });
 
@@ -174,6 +175,7 @@ describe("dispatchTool — Confluence tools", () => {
       title: "Updated",
       body: "<p>New</p>",
       versionNumber: 2,
+      status: "current",
     });
   });
 
