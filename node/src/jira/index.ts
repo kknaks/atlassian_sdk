@@ -11,13 +11,15 @@ export type {
   JiraStatusCategory,
   JiraPriority,
   JiraUser,
-  JiraIssueFields,
+  RawJiraIssue,
   JiraIssue,
   JiraTransition,
   JiraComment,
-  JiraSearchResult,
+  RawJiraSearchResult,
   JiraCommentPage,
 } from "./types.js";
+
+export { flattenIssue, issueUrl } from "./types.js";
 
 export {
   textToAdf,

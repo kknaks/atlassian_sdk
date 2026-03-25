@@ -9,6 +9,7 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import type { JiraClient } from "../jira/index.js";
 import type { ConfluenceClient } from "../confluence/index.js";
+import { issueUrl } from "../jira/types.js";
 
 /** All MCP tool definitions for the Atlassian SDK. */
 const TOOL_DEFINITIONS = [
@@ -333,24 +334,45 @@ export async function dispatchTool(
       return Object.keys(models);
     }
 
-    // Jira tools
-    case "jira_list_projects":
-      return getJira().listProjects();
+    // Jira tools — formatted to match Python SDK MCP output
+    case "jira_list_projects": {
+      const projects = await getJira().listProjects();
+      return projects.map((p) => ({ key: p.key, name: p.name }));
+    }
 
-    case "jira_list_issue_types":
-      return getJira().listIssueTypes(args.project as string);
+    case "jira_list_issue_types": {
+      const types = await getJira().listIssueTypes(args.project as string);
+      return types.map((t) => ({ id: t.id, name: t.name, subtask: t.subtask }));
+    }
 
-    case "jira_get_issue":
-      return getJira().getIssue(args.key as string);
+    case "jira_get_issue": {
+      const issue = await getJira().getIssue(args.key as string);
+      return {
+        key: issue.key,
+        summary: issue.summary,
+        status: issue.status?.name ?? null,
+        type: issue.issuetype?.name ?? null,
+        assignee: issue.assignee?.displayName ?? null,
+        labels: issue.labels,
+        url: issueUrl(issue.self, issue.key),
+      };
+    }
 
-    case "jira_search_issues":
-      return getJira().searchIssues({
+    case "jira_search_issues": {
+      const issues = await getJira().searchIssues({
         jql: args.jql as string,
         maxResults: (args.maxResults as number | undefined) ?? 50,
       });
+      return issues.map((i) => ({
+        key: i.key,
+        summary: i.summary,
+        status: i.status?.name ?? null,
+        type: i.issuetype?.name ?? null,
+      }));
+    }
 
-    case "jira_create_issue":
-      return getJira().createIssue({
+    case "jira_create_issue": {
+      const created = await getJira().createIssue({
         projectKey: args.projectKey as string,
         summary: args.summary as string,
         issueTypeName: (args.issueTypeName as string | undefined) ?? "Task",
@@ -359,76 +381,125 @@ export async function dispatchTool(
         labels: args.labels as string[] | undefined,
         parentKey: args.parentKey as string | undefined,
       });
+      return {
+        key: created.key,
+        summary: created.summary,
+        url: issueUrl(created.self, created.key),
+      };
+    }
 
     case "jira_transition_issue":
       await getJira().transitionIssue(
         args.key as string,
         args.status as string,
       );
-      return { success: true };
+      return `Transitioned ${args.key} to '${args.status}'`;
 
     case "jira_add_comment":
-      return getJira().addComment(
+      await getJira().addComment(
         args.key as string,
         args.body as string,
       );
+      return `Comment added to ${args.key}`;
 
-    case "jira_list_comments":
-      return getJira().listComments(args.key as string);
+    case "jira_list_comments": {
+      const comments = await getJira().listComments(args.key as string);
+      return comments.map((c) => ({
+        id: c.id,
+        author: c.author?.displayName ?? null,
+        body: c.body,
+        created: c.created ?? null,
+        updated: c.updated ?? null,
+      }));
+    }
 
-    // Confluence tools
-    case "confluence_create_page":
-      return getConfluence().createPage({
+    // Confluence tools — formatted to match Python SDK MCP output
+    case "confluence_create_page": {
+      const page = await getConfluence().createPage({
         spaceId: args.spaceId as string,
         title: args.title as string,
         body: args.body as string,
         parentId: args.parentId as string | undefined,
         status: "current",
       });
+      return { id: page.id, title: page.title, spaceId: page.spaceId, status: page.status };
+    }
 
-    case "confluence_get_page":
-      return getConfluence().getPage(args.pageId as string);
+    case "confluence_get_page": {
+      const page = await getConfluence().getPage(args.pageId as string);
+      return {
+        id: page.id,
+        title: page.title,
+        spaceId: page.spaceId,
+        status: page.status,
+        parentId: page.parentId ?? null,
+        version: page.version ?? null,
+        body: page.body ?? null,
+      };
+    }
 
-    case "confluence_update_page":
-      return getConfluence().updatePage(args.pageId as string, {
+    case "confluence_update_page": {
+      const page = await getConfluence().updatePage(args.pageId as string, {
         title: args.title as string,
         body: args.body as string,
         versionNumber: args.versionNumber as number,
         status: "current",
       });
+      return { id: page.id, title: page.title, spaceId: page.spaceId, status: page.status };
+    }
 
-    case "confluence_list_spaces":
-      return getConfluence().listSpaces();
+    case "confluence_list_spaces": {
+      const spaces = await getConfluence().listSpaces();
+      return spaces.map((s) => ({ id: s.id, key: s.key, name: s.name, type: s.type, status: s.status }));
+    }
 
-    case "confluence_list_pages_in_space":
-      return getConfluence().listPagesInSpace(args.spaceId as string);
+    case "confluence_list_pages_in_space": {
+      const pages = await getConfluence().listPagesInSpace(args.spaceId as string);
+      return pages.map((p) => ({ id: p.id, title: p.title, status: p.status }));
+    }
 
-    case "confluence_list_child_pages":
-      return getConfluence().listChildPages(args.pageId as string);
+    case "confluence_list_child_pages": {
+      const pages = await getConfluence().listChildPages(args.pageId as string);
+      return pages.map((p) => ({ id: p.id, title: p.title, status: p.status }));
+    }
 
-    case "confluence_list_footer_comments":
-      return getConfluence().listFooterComments(args.pageId as string);
+    case "confluence_list_footer_comments": {
+      const comments = await getConfluence().listFooterComments(args.pageId as string);
+      return comments.map((c) => ({ id: c.id, status: c.status, title: c.title, body: c.body }));
+    }
 
-    case "confluence_add_footer_comment":
-      return getConfluence().createFooterComment(
+    case "confluence_add_footer_comment": {
+      const comment = await getConfluence().createFooterComment(
         args.pageId as string,
         args.body as string,
       );
+      return { id: comment.id, status: comment.status };
+    }
 
-    case "confluence_list_inline_comments":
-      return getConfluence().listInlineComments(args.pageId as string);
+    case "confluence_list_inline_comments": {
+      const comments = await getConfluence().listInlineComments(args.pageId as string);
+      return comments.map((c) => ({ id: c.id, status: c.status, title: c.title, body: c.body }));
+    }
 
-    case "confluence_add_inline_comment":
-      return getConfluence().createInlineComment(
+    case "confluence_add_inline_comment": {
+      const comment = await getConfluence().createInlineComment(
         args.pageId as string,
         args.body as string,
       );
+      return { id: comment.id, status: comment.status };
+    }
 
-    case "confluence_search":
-      return getConfluence().searchByCql(
+    case "confluence_search": {
+      const result = await getConfluence().searchByCql(
         args.cql as string,
         (args.limit as number | undefined) ?? 25,
       );
+      return result.results.map((r) => ({
+        title: r.title,
+        excerpt: r.excerpt ?? null,
+        url: r.url ?? null,
+      }));
+    }
 
     default:
       throw new Error(`Unknown tool: ${name}`);

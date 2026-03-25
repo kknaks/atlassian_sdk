@@ -9,11 +9,13 @@ import type {
   JiraProject,
   JiraIssueType,
   JiraIssue,
+  RawJiraIssue,
   JiraTransition,
   JiraComment,
-  JiraSearchResult,
+  RawJiraSearchResult,
   JiraCommentPage,
 } from "./types.js";
+import { flattenIssue } from "./types.js";
 import {
   createIssueSchema,
   createIssueBody,
@@ -158,16 +160,18 @@ export class JiraClient {
     return this.getIssue(result.key);
   }
 
-  /** Get a single issue by key. */
+  /** Get a single issue by key (flattened). */
   async getIssue(issueKey: string): Promise<JiraIssue> {
-    return this.#http.get<JiraIssue>(`/rest/api/3/issue/${issueKey}`);
+    const raw = await this.#http.get<RawJiraIssue>(`/rest/api/3/issue/${issueKey}`);
+    return flattenIssue(raw);
   }
 
-  /** Search issues using JQL. */
-  async searchIssues(input: SearchIssuesInput): Promise<JiraSearchResult> {
+  /** Search issues using JQL (returns flattened array). */
+  async searchIssues(input: SearchIssuesInput): Promise<JiraIssue[]> {
     const parsed = searchIssuesSchema.parse(input);
     const body = searchIssuesBody(parsed);
-    return this.#http.post<JiraSearchResult>("/rest/api/3/search/jql", body);
+    const result = await this.#http.post<RawJiraSearchResult>("/rest/api/3/search/jql", body);
+    return result.issues.map(flattenIssue);
   }
 
   /** Transition an issue to a new status by name. */
@@ -202,10 +206,11 @@ export class JiraClient {
     );
   }
 
-  /** List comments on an issue. */
-  async listComments(issueKey: string): Promise<JiraCommentPage> {
-    return this.#http.get<JiraCommentPage>(
+  /** List comments on an issue (returns array). */
+  async listComments(issueKey: string): Promise<JiraComment[]> {
+    const page = await this.#http.get<JiraCommentPage>(
       `/rest/api/3/issue/${issueKey}/comment`,
     );
+    return page.comments;
   }
 }

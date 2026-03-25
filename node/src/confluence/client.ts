@@ -4,6 +4,7 @@ import { HttpClient } from "../http.js";
 import type { AuthConfig } from "../auth.js";
 import type {
   ConfluencePage,
+  ConfluenceSpace,
   ConfluenceComment,
   ConfluencePageList,
   ConfluenceSpaceList,
@@ -59,42 +60,46 @@ export class ConfluenceClient {
     );
   }
 
-  /** List all spaces. */
-  async listSpaces(limit = 25): Promise<ConfluenceSpaceList> {
-    return this.#http.get<ConfluenceSpaceList>("/wiki/api/v2/spaces", {
+  /** List all spaces (returns array). */
+  async listSpaces(limit = 25): Promise<ConfluenceSpace[]> {
+    const result = await this.#http.get<ConfluenceSpaceList>("/wiki/api/v2/spaces", {
       limit: String(limit),
     });
+    return result.results;
   }
 
-  /** List pages in a space. */
+  /** List pages in a space (returns array). */
   async listPagesInSpace(
     spaceId: string,
     limit = 25,
-  ): Promise<ConfluencePageList> {
-    return this.#http.get<ConfluencePageList>(
+  ): Promise<ConfluencePage[]> {
+    const result = await this.#http.get<ConfluencePageList>(
       `/wiki/api/v2/spaces/${spaceId}/pages`,
       { limit: String(limit) },
     );
+    return result.results;
   }
 
-  /** List child pages of a page. */
+  /** List child pages of a page (returns array). */
   async listChildPages(
     pageId: string,
     limit = 25,
-  ): Promise<ConfluencePageList> {
-    return this.#http.get<ConfluencePageList>(
+  ): Promise<ConfluencePage[]> {
+    const result = await this.#http.get<ConfluencePageList>(
       `/wiki/api/v2/pages/${pageId}/children`,
       { limit: String(limit) },
     );
+    return result.results;
   }
 
-  /** List footer comments on a page. */
+  /** List footer comments on a page (returns array). */
   async listFooterComments(
     pageId: string,
-  ): Promise<ConfluenceCommentList> {
-    return this.#http.get<ConfluenceCommentList>(
+  ): Promise<ConfluenceComment[]> {
+    const result = await this.#http.get<ConfluenceCommentList>(
       `/wiki/api/v2/pages/${pageId}/footer-comments`,
     );
+    return result.results;
   }
 
   /** Create a footer comment on a page. */
@@ -109,13 +114,14 @@ export class ConfluenceClient {
     );
   }
 
-  /** List inline comments on a page. */
+  /** List inline comments on a page (returns array). */
   async listInlineComments(
     pageId: string,
-  ): Promise<ConfluenceCommentList> {
-    return this.#http.get<ConfluenceCommentList>(
+  ): Promise<ConfluenceComment[]> {
+    const result = await this.#http.get<ConfluenceCommentList>(
       `/wiki/api/v2/pages/${pageId}/inline-comments`,
     );
+    return result.results;
   }
 
   /** Create an inline comment on a page. */

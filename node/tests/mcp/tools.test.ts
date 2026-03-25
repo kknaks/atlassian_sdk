@@ -11,28 +11,38 @@ import type { ConfluenceClient } from "../../src/confluence/index.js";
 /** Create a mock JiraClient with all methods stubbed. */
 function mockJira(): JiraClient {
   return {
-    listProjects: vi.fn().mockResolvedValue([{ key: "PROJ" }]),
-    listIssueTypes: vi.fn().mockResolvedValue([{ name: "Task" }]),
-    getIssue: vi.fn().mockResolvedValue({ key: "PROJ-1" }),
-    searchIssues: vi.fn().mockResolvedValue({ issues: [] }),
-    createIssue: vi.fn().mockResolvedValue({ key: "PROJ-2" }),
+    listProjects: vi.fn().mockResolvedValue([{ id: "1", key: "PROJ", name: "Project" }]),
+    listIssueTypes: vi.fn().mockResolvedValue([{ id: "1", name: "Task", subtask: false }]),
+    getIssue: vi.fn().mockResolvedValue({
+      id: "10001", key: "PROJ-1", self: "https://example.atlassian.net/rest/api/3/issue/10001",
+      summary: "Test issue", status: { id: "1", name: "To Do" },
+      issuetype: { id: "1", name: "Task", subtask: false },
+      assignee: { accountId: "u1", displayName: "John" }, labels: [],
+    }),
+    searchIssues: vi.fn().mockResolvedValue([]),
+    createIssue: vi.fn().mockResolvedValue({
+      id: "10002", key: "PROJ-2", self: "https://example.atlassian.net/rest/api/3/issue/10002",
+      summary: "New issue", labels: [],
+    }),
     transitionIssue: vi.fn().mockResolvedValue(undefined),
     addComment: vi.fn().mockResolvedValue({ id: "100" }),
-    listComments: vi.fn().mockResolvedValue({ comments: [] }),
+    listComments: vi.fn().mockResolvedValue([]),
   } as unknown as JiraClient;
 }
 
 /** Create a mock ConfluenceClient with all methods stubbed. */
 function mockConfluence(): ConfluenceClient {
   return {
-    createPage: vi.fn().mockResolvedValue({ id: "1" }),
-    getPage: vi.fn().mockResolvedValue({ id: "1", title: "Test" }),
-    updatePage: vi.fn().mockResolvedValue({ id: "1" }),
-    listSpaces: vi.fn().mockResolvedValue({ results: [] }),
-    listPagesInSpace: vi.fn().mockResolvedValue({ results: [] }),
-    listChildPages: vi.fn().mockResolvedValue({ results: [] }),
-    listFooterComments: vi.fn().mockResolvedValue({ results: [] }),
+    createPage: vi.fn().mockResolvedValue({ id: "1", title: "New", spaceId: "SP1", status: "current" }),
+    getPage: vi.fn().mockResolvedValue({ id: "1", title: "Test", spaceId: "SP1", status: "current" }),
+    updatePage: vi.fn().mockResolvedValue({ id: "1", title: "Updated", spaceId: "SP1", status: "current" }),
+    listSpaces: vi.fn().mockResolvedValue([]),
+    listPagesInSpace: vi.fn().mockResolvedValue([]),
+    listChildPages: vi.fn().mockResolvedValue([]),
+    listFooterComments: vi.fn().mockResolvedValue([]),
     createFooterComment: vi.fn().mockResolvedValue({ id: "200" }),
+    listInlineComments: vi.fn().mockResolvedValue([]),
+    createInlineComment: vi.fn().mockResolvedValue({ id: "201" }),
     searchByCql: vi.fn().mockResolvedValue({ results: [] }),
   } as unknown as ConfluenceClient;
 }
@@ -44,12 +54,12 @@ describe("TOOL_COUNT", () => {
 });
 
 describe("dispatchTool — Jira tools", () => {
-  it("jira_list_projects calls listProjects", async () => {
+  it("jira_list_projects calls listProjects and returns filtered fields", async () => {
     const jira = mockJira();
     const confluence = mockConfluence();
     const result = await dispatchTool("jira_list_projects", {}, jira, confluence);
     expect(jira.listProjects).toHaveBeenCalledOnce();
-    expect(result).toEqual([{ key: "PROJ" }]);
+    expect(result).toEqual([{ key: "PROJ", name: "Project" }]);
   });
 
   it("jira_list_issue_types calls listIssueTypes with project", async () => {
@@ -100,7 +110,7 @@ describe("dispatchTool — Jira tools", () => {
     });
   });
 
-  it("jira_transition_issue calls transitionIssue and returns success", async () => {
+  it("jira_transition_issue calls transitionIssue and returns message", async () => {
     const jira = mockJira();
     const confluence = mockConfluence();
     const result = await dispatchTool(
@@ -110,7 +120,7 @@ describe("dispatchTool — Jira tools", () => {
       confluence,
     );
     expect(jira.transitionIssue).toHaveBeenCalledWith("PROJ-1", "Done");
-    expect(result).toEqual({ success: true });
+    expect(result).toBe("Transitioned PROJ-1 to 'Done'");
   });
 
   it("jira_add_comment calls addComment", async () => {
@@ -129,12 +139,12 @@ describe("dispatchTool — Jira tools", () => {
 });
 
 describe("dispatchTool — Confluence tools", () => {
-  it("confluence_list_spaces calls listSpaces", async () => {
+  it("confluence_list_spaces calls listSpaces and returns array", async () => {
     const jira = mockJira();
     const confluence = mockConfluence();
     const result = await dispatchTool("confluence_list_spaces", {}, jira, confluence);
     expect(confluence.listSpaces).toHaveBeenCalledOnce();
-    expect(result).toEqual({ results: [] });
+    expect(result).toEqual([]);
   });
 
   it("confluence_create_page calls createPage", async () => {

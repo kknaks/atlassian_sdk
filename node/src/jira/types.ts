@@ -39,7 +39,35 @@ export interface JiraUser {
   active?: boolean;
 }
 
-export interface JiraIssueFields {
+/** Raw API response shape (nested fields). */
+export interface RawJiraIssue {
+  id: string;
+  key: string;
+  self: string;
+  fields: {
+    summary: string;
+    description?: unknown;
+    status?: JiraStatus;
+    issuetype?: JiraIssueType;
+    priority?: JiraPriority;
+    assignee?: JiraUser | null;
+    creator?: JiraUser;
+    reporter?: JiraUser;
+    project?: { id: string; key: string; name: string };
+    labels?: string[];
+    created?: string;
+    updated?: string;
+    parent?: { id: string; key: string; fields?: Record<string, unknown> };
+    duedate?: string | null;
+    resolution?: Record<string, unknown> | null;
+  };
+}
+
+/** Flattened issue — fields merged to top level (matches Python SDK). */
+export interface JiraIssue {
+  id: string;
+  key: string;
+  self: string;
   summary: string;
   description?: unknown;
   status?: JiraStatus;
@@ -49,19 +77,47 @@ export interface JiraIssueFields {
   creator?: JiraUser;
   reporter?: JiraUser;
   project?: { id: string; key: string; name: string };
-  labels?: string[];
+  labels: string[];
   created?: string;
   updated?: string;
-  parent?: { id: string; key: string; fields?: Record<string, unknown> };
+  parent?: { id: string; key: string };
   duedate?: string | null;
   resolution?: Record<string, unknown> | null;
 }
 
-export interface JiraIssue {
-  id: string;
-  key: string;
-  self: string;
-  fields: JiraIssueFields;
+/** Flatten raw API response into SDK-level JiraIssue. */
+export function flattenIssue(raw: RawJiraIssue): JiraIssue {
+  const { id, key, self: selfUrl, fields } = raw;
+  return {
+    id,
+    key,
+    self: selfUrl,
+    summary: fields.summary,
+    description: fields.description,
+    status: fields.status,
+    issuetype: fields.issuetype,
+    priority: fields.priority,
+    assignee: fields.assignee,
+    creator: fields.creator,
+    reporter: fields.reporter,
+    project: fields.project,
+    labels: fields.labels ?? [],
+    created: fields.created,
+    updated: fields.updated,
+    parent: fields.parent ? { id: fields.parent.id, key: fields.parent.key } : undefined,
+    duedate: fields.duedate,
+    resolution: fields.resolution,
+  };
+}
+
+/** Build Jira web URL from issue self URL and key. */
+export function issueUrl(selfUrl: string, key: string): string {
+  try {
+    const u = new URL(selfUrl);
+    return `${u.origin}/browse/${key}`;
+  } catch {
+    return "";
+  }
 }
 
 export interface JiraTransition {
@@ -78,8 +134,9 @@ export interface JiraComment {
   updated?: string;
 }
 
-export interface JiraSearchResult {
-  issues: JiraIssue[];
+/** Raw search result from API. */
+export interface RawJiraSearchResult {
+  issues: RawJiraIssue[];
   total: number;
   startAt: number;
   maxResults: number;

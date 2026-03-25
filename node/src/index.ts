@@ -30,13 +30,14 @@ export type {
   JiraStatusCategory,
   JiraPriority,
   JiraUser,
-  JiraIssueFields,
+  RawJiraIssue,
   JiraIssue,
   JiraTransition,
   JiraComment,
-  JiraSearchResult,
+  RawJiraSearchResult,
   JiraCommentPage,
 } from "./jira/index.js";
+export { flattenIssue, issueUrl } from "./jira/index.js";
 export {
   createIssueSchema,
   createIssueBody,

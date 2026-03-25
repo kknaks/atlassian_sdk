@@ -6,10 +6,12 @@ import { JiraClient } from "../../src/jira/client.js";
 import type {
   JiraProject,
   JiraIssue,
-  JiraSearchResult,
+  RawJiraIssue,
+  RawJiraSearchResult,
   JiraComment,
   JiraCommentPage,
 } from "../../src/jira/types.js";
+import { flattenIssue } from "../../src/jira/types.js";
 
 /** Create a mock HttpClient with stubbed get/post/put methods. */
 function createMockHttp(): HttpClient {
@@ -89,7 +91,7 @@ describe("JiraClient", () => {
         key: "TEST-1",
         self: "https://example.atlassian.net/rest/api/3/issue/10001",
       };
-      const fullIssue: JiraIssue = {
+      const rawIssue: RawJiraIssue = {
         id: "10001",
         key: "TEST-1",
         self: createResponse.self,
@@ -97,7 +99,7 @@ describe("JiraClient", () => {
       };
 
       mockPost(http).mockResolvedValueOnce(createResponse);
-      mockGet(http).mockResolvedValueOnce(fullIssue);
+      mockGet(http).mockResolvedValueOnce(rawIssue);
 
       const result = await client.createIssue({
         projectKey: "TEST",
@@ -128,32 +130,32 @@ describe("JiraClient", () => {
       expect(mockGet(http)).toHaveBeenCalledWith(
         "/rest/api/3/issue/TEST-1",
       );
-      expect(result).toEqual(fullIssue);
+      expect(result).toEqual(flattenIssue(rawIssue));
     });
   });
 
   describe("getIssue", () => {
-    it("calls GET /rest/api/3/issue/{key}", async () => {
-      const issue: JiraIssue = {
+    it("calls GET /rest/api/3/issue/{key} and returns flattened issue", async () => {
+      const rawIssue: RawJiraIssue = {
         id: "10001",
         key: "TEST-1",
         self: "https://example.atlassian.net/rest/api/3/issue/10001",
         fields: { summary: "Some issue" },
       };
-      mockGet(http).mockResolvedValueOnce(issue);
+      mockGet(http).mockResolvedValueOnce(rawIssue);
 
       const result = await client.getIssue("TEST-1");
 
       expect(mockGet(http)).toHaveBeenCalledWith(
         "/rest/api/3/issue/TEST-1",
       );
-      expect(result).toEqual(issue);
+      expect(result).toEqual(flattenIssue(rawIssue));
     });
   });
 
   describe("searchIssues", () => {
-    it("POSTs to /rest/api/3/search/jql", async () => {
-      const searchResult: JiraSearchResult = {
+    it("POSTs to /rest/api/3/search/jql and returns flattened array", async () => {
+      const searchResult: RawJiraSearchResult = {
         issues: [],
         total: 0,
         startAt: 0,
@@ -169,7 +171,7 @@ describe("JiraClient", () => {
         "/rest/api/3/search/jql",
         { jql: "project = TEST", maxResults: 50 },
       );
-      expect(result).toEqual(searchResult);
+      expect(result).toEqual([]);
     });
   });
 
@@ -258,7 +260,7 @@ describe("JiraClient", () => {
   });
 
   describe("listComments", () => {
-    it("calls GET /rest/api/3/issue/{key}/comment", async () => {
+    it("calls GET /rest/api/3/issue/{key}/comment and returns array", async () => {
       const page: JiraCommentPage = {
         comments: [],
         total: 0,
@@ -272,7 +274,7 @@ describe("JiraClient", () => {
       expect(mockGet(http)).toHaveBeenCalledWith(
         "/rest/api/3/issue/TEST-1/comment",
       );
-      expect(result).toEqual(page);
+      expect(result).toEqual([]);
     });
   });
 });

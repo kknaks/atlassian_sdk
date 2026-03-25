@@ -136,7 +136,7 @@ describe("ConfluenceClient", () => {
   });
 
   describe("listSpaces", () => {
-    it("calls GET /wiki/api/v2/spaces with default limit", async () => {
+    it("calls GET /wiki/api/v2/spaces and returns unwrapped array", async () => {
       const spaces: ConfluenceSpaceList = {
         results: [{ id: "100", key: "DEV", name: "Dev" }],
       };
@@ -147,7 +147,7 @@ describe("ConfluenceClient", () => {
       expect(mockGet(http)).toHaveBeenCalledWith("/wiki/api/v2/spaces", {
         limit: "25",
       });
-      expect(result).toEqual(spaces);
+      expect(result).toEqual([{ id: "100", key: "DEV", name: "Dev" }]);
     });
 
     it("passes custom limit", async () => {
@@ -162,7 +162,7 @@ describe("ConfluenceClient", () => {
   });
 
   describe("listPagesInSpace", () => {
-    it("calls GET /wiki/api/v2/spaces/{id}/pages", async () => {
+    it("calls GET /wiki/api/v2/spaces/{id}/pages and returns array", async () => {
       const pages: ConfluencePageList = { results: [] };
       mockGet(http).mockResolvedValueOnce(pages);
 
@@ -172,12 +172,12 @@ describe("ConfluenceClient", () => {
         "/wiki/api/v2/spaces/100/pages",
         { limit: "25" },
       );
-      expect(result).toEqual(pages);
+      expect(result).toEqual([]);
     });
   });
 
   describe("listChildPages", () => {
-    it("calls GET /wiki/api/v2/pages/{id}/children", async () => {
+    it("calls GET /wiki/api/v2/pages/{id}/children and returns array", async () => {
       const pages: ConfluencePageList = { results: [] };
       mockGet(http).mockResolvedValueOnce(pages);
 
@@ -187,12 +187,12 @@ describe("ConfluenceClient", () => {
         "/wiki/api/v2/pages/200/children",
         { limit: "25" },
       );
-      expect(result).toEqual(pages);
+      expect(result).toEqual([]);
     });
   });
 
   describe("listFooterComments", () => {
-    it("calls GET /wiki/api/v2/pages/{id}/footer-comments", async () => {
+    it("calls GET /wiki/api/v2/pages/{id}/footer-comments and returns array", async () => {
       const comments: ConfluenceCommentList = { results: [] };
       mockGet(http).mockResolvedValueOnce(comments);
 
@@ -201,7 +201,7 @@ describe("ConfluenceClient", () => {
       expect(mockGet(http)).toHaveBeenCalledWith(
         "/wiki/api/v2/pages/200/footer-comments",
       );
-      expect(result).toEqual(comments);
+      expect(result).toEqual([]);
     });
   });
 
@@ -221,7 +221,7 @@ describe("ConfluenceClient", () => {
   });
 
   describe("listInlineComments", () => {
-    it("calls GET /wiki/api/v2/pages/{id}/inline-comments", async () => {
+    it("calls GET /wiki/api/v2/pages/{id}/inline-comments and returns array", async () => {
       const comments: ConfluenceCommentList = { results: [] };
       mockGet(http).mockResolvedValueOnce(comments);
 
@@ -230,7 +230,7 @@ describe("ConfluenceClient", () => {
       expect(mockGet(http)).toHaveBeenCalledWith(
         "/wiki/api/v2/pages/200/inline-comments",
       );
-      expect(result).toEqual(comments);
+      expect(result).toEqual([]);
     });
   });
 
