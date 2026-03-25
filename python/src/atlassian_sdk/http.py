@@ -148,7 +148,12 @@ class AsyncHttpClient:
         site = os.environ.get("ATLASSIAN_SITE")
         if not site:
             raise AuthError(
-                "Missing environment variable(s): ATLASSIAN_SITE",
+                "Missing environment variable(s): ATLASSIAN_SITE\n\n"
+                "To fix this, either:\n"
+                "  1. Create a .env file with the variables and use --env-file .env\n"
+                "  2. Set it in your shell: export ATLASSIAN_SITE=mysite.atlassian.net\n"
+                "  3. Add env field in .mcp.json: \"env\": { \"ATLASSIAN_SITE\": \"...\" }\n\n"
+                "Required: ATLASSIAN_SITE — Your Atlassian site (e.g. mysite.atlassian.net)",
                 status_code=401,
                 response_body="",
             )

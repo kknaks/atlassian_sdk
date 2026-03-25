@@ -257,9 +257,11 @@ type ToolArgs = Record<string, unknown>;
 export async function dispatchTool(
   name: string,
   args: ToolArgs,
-  jira: JiraClient,
-  confluence: ConfluenceClient,
+  jira: JiraClient | (() => JiraClient),
+  confluence: ConfluenceClient | (() => ConfluenceClient),
 ): Promise<unknown> {
+  const getJira = typeof jira === "function" ? jira : () => jira;
+  const getConfluence = typeof confluence === "function" ? confluence : () => confluence;
   switch (name) {
     // Schema inspection tools
     case "list_methods": {
@@ -333,22 +335,22 @@ export async function dispatchTool(
 
     // Jira tools
     case "jira_list_projects":
-      return jira.listProjects();
+      return getJira().listProjects();
 
     case "jira_list_issue_types":
-      return jira.listIssueTypes(args.project as string);
+      return getJira().listIssueTypes(args.project as string);
 
     case "jira_get_issue":
-      return jira.getIssue(args.key as string);
+      return getJira().getIssue(args.key as string);
 
     case "jira_search_issues":
-      return jira.searchIssues({
+      return getJira().searchIssues({
         jql: args.jql as string,
         maxResults: (args.maxResults as number | undefined) ?? 50,
       });
 
     case "jira_create_issue":
-      return jira.createIssue({
+      return getJira().createIssue({
         projectKey: args.projectKey as string,
         summary: args.summary as string,
         issueTypeName: (args.issueTypeName as string | undefined) ?? "Task",
@@ -359,24 +361,24 @@ export async function dispatchTool(
       });
 
     case "jira_transition_issue":
-      await jira.transitionIssue(
+      await getJira().transitionIssue(
         args.key as string,
         args.status as string,
       );
       return { success: true };
 
     case "jira_add_comment":
-      return jira.addComment(
+      return getJira().addComment(
         args.key as string,
         args.body as string,
       );
 
     case "jira_list_comments":
-      return jira.listComments(args.key as string);
+      return getJira().listComments(args.key as string);
 
     // Confluence tools
     case "confluence_create_page":
-      return confluence.createPage({
+      return getConfluence().createPage({
         spaceId: args.spaceId as string,
         title: args.title as string,
         body: args.body as string,
@@ -385,10 +387,10 @@ export async function dispatchTool(
       });
 
     case "confluence_get_page":
-      return confluence.getPage(args.pageId as string);
+      return getConfluence().getPage(args.pageId as string);
 
     case "confluence_update_page":
-      return confluence.updatePage(args.pageId as string, {
+      return getConfluence().updatePage(args.pageId as string, {
         title: args.title as string,
         body: args.body as string,
         versionNumber: args.versionNumber as number,
@@ -396,34 +398,34 @@ export async function dispatchTool(
       });
 
     case "confluence_list_spaces":
-      return confluence.listSpaces();
+      return getConfluence().listSpaces();
 
     case "confluence_list_pages_in_space":
-      return confluence.listPagesInSpace(args.spaceId as string);
+      return getConfluence().listPagesInSpace(args.spaceId as string);
 
     case "confluence_list_child_pages":
-      return confluence.listChildPages(args.pageId as string);
+      return getConfluence().listChildPages(args.pageId as string);
 
     case "confluence_list_footer_comments":
-      return confluence.listFooterComments(args.pageId as string);
+      return getConfluence().listFooterComments(args.pageId as string);
 
     case "confluence_add_footer_comment":
-      return confluence.createFooterComment(
+      return getConfluence().createFooterComment(
         args.pageId as string,
         args.body as string,
       );
 
     case "confluence_list_inline_comments":
-      return confluence.listInlineComments(args.pageId as string);
+      return getConfluence().listInlineComments(args.pageId as string);
 
     case "confluence_add_inline_comment":
-      return confluence.createInlineComment(
+      return getConfluence().createInlineComment(
         args.pageId as string,
         args.body as string,
       );
 
     case "confluence_search":
-      return confluence.searchByCql(
+      return getConfluence().searchByCql(
         args.cql as string,
         (args.limit as number | undefined) ?? 25,
       );
@@ -436,8 +438,8 @@ export async function dispatchTool(
 /** Register all Atlassian MCP tools on the given server. */
 export function registerTools(
   server: Server,
-  jira: JiraClient,
-  confluence: ConfluenceClient,
+  jira: JiraClient | (() => JiraClient),
+  confluence: ConfluenceClient | (() => ConfluenceClient),
 ): void {
   server.setRequestHandler(ListToolsRequestSchema, async () => ({
     tools: [...TOOL_DEFINITIONS],

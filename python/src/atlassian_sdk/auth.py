@@ -41,7 +41,14 @@ class BasicAuth:
 
         if missing:
             raise AuthError(
-                f"Missing environment variable(s): {', '.join(missing)}",
+                f"Missing environment variable(s): {', '.join(missing)}\n\n"
+                "To fix this, either:\n"
+                "  1. Create a .env file with the variables and use --env-file .env\n"
+                "  2. Set them in your shell: export ATLASSIAN_EMAIL=you@example.com\n"
+                "  3. Add env field in .mcp.json: \"env\": { \"ATLASSIAN_EMAIL\": \"...\" }\n\n"
+                "Required variables:\n"
+                "  ATLASSIAN_EMAIL     — Account email address\n"
+                "  ATLASSIAN_API_TOKEN — API token (https://id.atlassian.com/manage-profile/security/api-tokens)",
                 status_code=401,
                 response_body="",
             )

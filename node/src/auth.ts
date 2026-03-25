@@ -71,7 +71,15 @@ export function loadAuthFromEnv(): AuthConfig {
 
   if (missing.length > 0) {
     throw new AuthError(
-      `Missing required environment variables: ${missing.join(", ")}`,
+      `Missing required environment variables: ${missing.join(", ")}\n\n` +
+      `To fix this, either:\n` +
+      `  1. Create a .env file with the variables and use --env-file .env\n` +
+      `  2. Set them in your shell: export ATLASSIAN_SITE=your-site.atlassian.net\n` +
+      `  3. Add env field in .mcp.json: "env": { "ATLASSIAN_SITE": "..." }\n\n` +
+      `Required variables:\n` +
+      `  ATLASSIAN_SITE      — Your Atlassian site (e.g. mysite.atlassian.net)\n` +
+      `  ATLASSIAN_EMAIL     — Account email address\n` +
+      `  ATLASSIAN_API_TOKEN — API token (https://id.atlassian.com/manage-profile/security/api-tokens)`,
     );
   }
 
