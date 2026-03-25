@@ -39,7 +39,7 @@ function mockConfluence(): ConfluenceClient {
 
 describe("TOOL_COUNT", () => {
   it("registers exactly 17 tools", () => {
-    expect(TOOL_COUNT).toBe(20);
+    expect(TOOL_COUNT).toBe(22);
   });
 });
 

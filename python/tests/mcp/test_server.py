@@ -22,9 +22,9 @@ from atlassian_sdk.mcp.server import (
 
 @pytest.mark.asyncio
 async def test_total_tool_count() -> None:
-    """Total tool count should be 20 (3 schema + 8 jira + 9 confluence)."""
+    """Total tool count should be 22 (3 schema + 8 jira + 11 confluence)."""
     tools = await list_tools()
-    assert len(tools) == 20
+    assert len(tools) == 22
 
 
 @pytest.mark.asyncio
